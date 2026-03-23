@@ -1,8 +1,9 @@
 
 
 -- setup 
-CREATE DATABASE IF NOT EXISTS FIELD_2025_NOLAatDUMMERSEE; 
-USE FIELD_2025_NOLAatDUMMERSEE; 
+CREATE DATABASE IF NOT EXISTS FIELD_2026_NOLAatDUMMERSEE; 
+USE FIELD_2026_NOLAatDUMMERSEE; 
+GRANT SELECT, SHOW VIEW ON FIELD_2026_NOLAatDUMMERSEE.* TO '***field_db_user***'@'%';
 
 CREATE TABLE IF NOT EXISTS AUTHORS (
   Name char(50)                DEFAULT NULL COMMENT 'Your full name.',
@@ -31,16 +32,21 @@ CREATE TABLE CAPTURES (
   
   sex_observed ENUM('M','F','U')         DEFAULT NULL COMMENT 'The observed sex: <kbd>F</kbd>(female),<kbd>M</kbd>(male),<kbd>U</kbd>(unknown)',
   ID varchar(255)              DEFAULT NULL COMMENT 'Metal ring number.',
-  UL varchar(10)               DEFAULT NULL COMMENT 'color band',
-  UR varchar(10)               DEFAULT NULL COMMENT 'color band',
-  LL varchar(10)               DEFAULT NULL COMMENT 'color band',
-  LR varchar(10)               DEFAULT NULL COMMENT 'color band',
+
+  UL_in varchar(10)               DEFAULT NULL COMMENT 'color band at capture (leave blank if not changed)',
+  UR_in varchar(10)               DEFAULT NULL COMMENT 'color band at capture (leave blank if not changed)',
+  LL_in varchar(10)               DEFAULT NULL COMMENT 'color band at capture (leave blank if not changed)',
+  LR_in varchar(10)               DEFAULT NULL COMMENT 'color band at capture (leave blank if not changed)',
+
+  UL varchar(10)               DEFAULT NULL COMMENT 'color band at release',
+  UR varchar(10)               DEFAULT NULL COMMENT 'color band at release',
+  LL varchar(10)               DEFAULT NULL COMMENT 'color band at release',
+  LR varchar(10)               DEFAULT NULL COMMENT 'color band at release',
+
   tagID varchar(10)            DEFAULT NULL COMMENT  'tagID',
   tagType varchar(10)          DEFAULT NULL COMMENT  'D (druid), G (Global messenger)',
   tag_action varchar(10)       DEFAULT NULL COMMENT 'on (tag deployed) or off(tag removed)',
-  tag_action varchar(10)       DEFAULT NULL COMMENT 'on (tag deployed) or off(tag removed)',
   harness DOUBLE               DEFAULT NULL COMMENT 'harness diameter (mm)',
-
   recapture BOOLEAN            DEFAULT NULL COMMENT '1(yes), 0(no)',
   
   tarsus DOUBLE                DEFAULT NULL COMMENT 'Length (mm)',
@@ -81,6 +87,7 @@ CREATE TABLE IF NOT EXISTS RESIGHTINGS (
   UR varchar(10)               DEFAULT NULL COMMENT 'color band',
   LL varchar(10)               DEFAULT NULL COMMENT 'color band',
   LR varchar(10)               DEFAULT NULL COMMENT 'color band',
+  has_tag TINYINT(1)           DEFAULT NULL  COMMENT '1 if tag is visible',
 
   behaviour TEXT               DEFAULT NULL COMMENT 'description of the behaviour' ,
 
@@ -128,16 +135,15 @@ CREATE TABLE NESTS (
   nest varchar(7)              DEFAULT NULL COMMENT 'Nest ID: SXYY, Where S is Species(the first letter of the species name), X=your GPS number, YY=your running nest number',
   
   nest_state ENUM('F','C','I','pP','pD','H','notA','D','P')
-  DEFAULT NULL COMMENT '<b>F</b> (found), <b>C</b> (collected), <b>I</b> (Incubated, active nest, warm eggs), <b>(p)P</b> [(possibly)Predated], <b>(p)D</b> [(possibly)Deserted, cold eggs], <b>H</b> (hatched, received hatched chicks), <b>notA</b> (not Active, nest marks removed), <b>D</b> (Deserted), <b>P</b> (Predated)',
-
+DEFAULT NULL COMMENT '<b>F</b> (found), <b>C</b> (collected), <b>I</b> (Incubated, active nest, warm eggs), <b>(p)P</b> [(possibly)Predated], <b>(p)D</b> [(possibly)Deserted, cold eggs], <b>H</b> (hatched, received hatched chicks), <b>notA</b> (not Active, nest marks removed), <b>D</b> (Deserted), <b>P</b> (Predated)',
   
   hatch_state varchar(50) DEFAULT NULL COMMENT 'No. of eggs(1-4) followed by egg state (N-no sign, S-star, C-crack,CC-multiple or a big crack). <br> E.g. 4N, 2N2S, 1N1S1C1CC ',
   
   bird_inc ENUM('M','F','U','E') DEFAULT NULL COMMENT ' M(male), F(female), U(unknown), E(nest empty, no one seen); this is usually done from the distance', 
   
   trap_on ENUM('Y') DEFAULT NULL COMMENT 'Was a trap installed on the nest? Y (yes) or leave blank.', 
-   `cap_fail`
-  cap_fail ENUM('tech','no-show','spooked', 'other') NULL COMMENT 'Capture failure: technical, no-show,spooked or other. If `other` specify in the comments',
+
+  cap_fail ENUM('tech','no-show','spooked', 'escaped', 'other') NULL COMMENT 'Capture failure: technical, no-show,escaped, spooked or other. If `other` specify in the comments',
 
 
   gps_id int(2)                DEFAULT NULL COMMENT 'GPS ID (recorded when nest is found)',
@@ -162,9 +168,6 @@ CREATE TABLE NESTS (
   KEY nest (nest),
   KEY gps (gps_id,gps_point)
 ) ENGINE=Aria ;
-
-
--- post deploy updates
 
 
 DROP TABLE IF EXISTS EGGS;
@@ -196,12 +199,16 @@ CREATE TABLE CHICKS (
   location ENUM('N', 'F', 'H') DEFAULT NULL COMMENT 'Chick capture location: N(Nest), F(Free chick - out of the nest), H(Hatcher).',
   caught    time               DEFAULT NULL COMMENT 'hh:mm time caught ',
   released  time               DEFAULT NULL COMMENT 'hh:mm time released',
+  recapture TINYINT(1)         DEFAULT NULL COMMENT '1 if recaptured, 0 otherwise',
   nest      varchar(7)         DEFAULT NULL COMMENT '<kbd>Nest ID</kbd>, see NESTS table',
+  nest_delivered  varchar(7)   DEFAULT NULL COMMENT '<kbd>Nest ID</kbd>, delivery nest',
+
   author  varchar(3)           DEFAULT NULL COMMENT 'Initials (see authors file)',
   ID      varchar(255)         DEFAULT NULL COMMENT 'Metal ring number.',   
   tarsus  DOUBLE               DEFAULT NULL COMMENT 'Length (mm)',  
   weight  DOUBLE               DEFAULT NULL COMMENT 'Body mass (g)',
   sample  varchar(255)         DEFAULT NULL COMMENT 'Comma delimited: F(fecal), C(cloaca_swab), W(blood whole), S(blood smear), P(blood plasma)',
+  dead TINYINT(1)               DEFAULT NULL COMMENT '1 if dead.',
   comments  varchar(500)       DEFAULT NULL COMMENT 'Comments.',
 
   nov int(1) unsigned zerofill DEFAULT NULL COMMENT 'No validation. Do not edit !',
@@ -217,6 +224,7 @@ CREATE TABLE SAMPLES (
   date_collect DATE NOT NULL            COMMENT 'Date the sample was collected',
   notes_field VARCHAR(255) DEFAULT NULL COMMENT 'Notes from field observation',
   tissue_collected TINYINT(1) DEFAULT 0 COMMENT '1 if tissue collected, 0 otherwise',
+  embrio_score TINYINT UNSIGNED DEFAULT NULL COMMENT 'Categorical embryo score from 0 to 9',
   date_processed DATE DEFAULT NULL      COMMENT 'Date the sample was processed (if applicable)',
   author VARCHAR(3) DEFAULT NULL        COMMENT 'Initials of collector/processor',
   notes_lab VARCHAR(255) DEFAULT NULL   COMMENT 'Notes from lab examination',
@@ -239,28 +247,15 @@ CREATE TABLE SAMPLES (
 
 
   INSERT INTO COMBOS (UL, UR) 
-    VALUES ('N,R','R,N'),('N,B','R,N'),('N,G','R,N'),('N,N','R,N'),('N,Y','R,N'),('N,R','R,Y'),('N,B','R,Y'),('N,G','R,Y'),('N,N','R,Y'),('N,Y','R,Y'),('N,B','R,B'),('N,G','R,B'),('N,N','R,B'),('N,Y','R,B'),('N,R','Y,N'),('N,B','Y,N'),('N,G','Y,N'),('N,N','Y,N'),('N,Y','Y,N'),('N,R','Y,G'),('N,B','Y,G'),('N,G','Y,G'),('N,N','Y,G'),('N,Y','Y,G'),('N,R','Y,B'),('N,B','Y,B'),('N,G','Y,B'),('N,N','Y,B'),('N,Y','Y,B'),('B,R','R,N'),('B,G','R,Y'),('B,N','R,Y'),('B,Y','R,Y'),('B,R','R,B'),('B,B','R,B'),('B,G','R,B'),('B,N','R,B'),('B,Y','R,B'),('B,R','Y,N'),('B,B','Y,N'),('B,G','Y,N'),('B,N','Y,N'),('B,Y','Y,N'),('B,R','Y,G'),('B,B','Y,G'),('B,G','Y,G'),('B,N','Y,G'),('B,Y','Y,G'),('B,R','Y,B'),('B,B','Y,B'),('B,G','Y,B'),('B,N','Y,B'),('B,Y','Y,B'),('G,R','R,N'),('G,N','R,N'),('G,Y','R,N'),('G,R','R,Y'),('G,Y','R,Y'),('G,B','R,B'),('G,G','R,B'),('G,N','R,B'),('G,Y','R,B'),('G,R','Y,N'),('G,B','Y,N'),('G,G','Y,N'),('G,N','Y,N'),('G,Y','Y,N'),('G,R','Y,G'),('G,B','Y,G'),('G,G','Y,G'),('G,N','Y,G'),('G,Y','Y,G'),('G,R','Y,B'),('G,B','Y,B'),('G,G','Y,B'),('G,N','Y,B'),('G,Y','Y,B'),('R,G','R,N'),('R,N','R,N'),('R,R','R,B'),('R,B','R,B'),('R,N','R,B'),('R,Y','R,B'),('R,R','Y,N'),('R,B','Y,N'),('R,G','Y,N'),('R,N','Y,N'),('R,Y','Y,N'),('R,R','Y,G'),('R,B','Y,G'),('R,G','Y,G'),('R,N','Y,G'),('R,Y','Y,G'),('R,R','Y,B'),('R,B','Y,B'),('R,G','Y,B'),('R,N','Y,B'),('R,Y','Y,B'),('Y,R','R,N'),('Y,B','R,N'),('Y,G','R,N'),('Y,N','R,N'),('Y,Y','R,N'),('Y,R','R,Y'),('Y,B','R,Y'),('Y,G','R,Y'),('Y,N','R,Y'),('Y,Y','R,Y'),('Y,R','R,B'),('Y,B','R,B'),('Y,G','R,B'),('Y,N','R,B'),('Y,Y','R,B'),('Y,R','Y,N'),('Y,B','Y,N'),('Y,G','Y,N'),('Y,N','Y,N'),('Y,Y','Y,N'),('Y,R','Y,G'),('Y,B','Y,G'),('Y,G','Y,G'),('Y,N','Y,G'),('Y,Y','Y,G'),('Y,R','Y,B'),('Y,B','Y,B'),('Y,G','Y,B'),('Y,N','Y,B'),('Y,Y','Y,B');
+    VALUES ('R,R','R,G'),('R,B','R,G'),('R,G','R,G'),('R,N','R,G'),('R,Y','R,G'),('B,R','R,G'),('B,B','R,G'),('B,G','R,G'),('B,N','R,G'),('B,Y','R,G'),('G,R','R,G'),('G,B','R,G'),('G,G','R,G'),('G,N','R,G'),('G,Y','R,G'),('N,R','R,G'),('N,B','R,G'),('N,G','R,G'),('N,N','R,G'),('N,Y','R,G'),('Y,R','R,G'),('Y,B','R,G'),('Y,G','R,G'),('Y,N','R,G'),('Y,Y','R,G'),('R,R','Y,R'),('R,B','Y,R'),('R,G','Y,R'),('R,N','Y,R'),('R,Y','Y,R'),('B,R','Y,R'),('Y,Y','Y,R'),('B,B','Y,R'),('B,G','Y,R'),('B,N','Y,R'),('B,Y','Y,R'),('G,R','Y,R'),('G,B','Y,R'),('G,G','Y,R'),('G,N','Y,R'),('G,Y','Y,R'),('N,R','Y,R'),('N,B','Y,R'),('N,G','Y,R'),('N,N','Y,R'),('N,Y','Y,R'),('Y,R','Y,R'),('Y,B','Y,R'),('Y,G','Y,R'),('Y,N','Y,R'),('Y,Y','G,B'),('R,R','G,B'),('R,B','G,B'),('R,G','G,B'),('R,N','G,B'),('R,Y','G,B'),('B,R','G,B'),('B,B','G,B'),('B,G','G,B'),('B,N','G,B'),('B,Y','G,B'),('G,R','G,B'),('G,B','G,B'),('G,G','G,B'),('G,N','G,B'),('G,Y','G,B'),('N,R','G,B'),('N,B','G,B'),('N,G','G,B'),('N,N','G,B'),('N,Y','G,B'),('Y,R','G,B'),('Y,B','G,B'),('Y,G','G,B'),('Y,N','G,B'),('R,R','G,G'),('R,B','G,G'),('R,G','G,G'),('R,N','G,G'),('R,Y','G,G'),('B,R','G,G'),('B,B','G,G'),('B,G','G,G'),('B,N','G,G'),('B,Y','G,G'),('G,R','G,G'),('G,B','G,G'),('G,G','G,G'),('G,N','G,G'),('G,Y','G,G'),('N,R','G,G'),('N,B','G,G'),('N,G','G,G'),('N,N','G,G'),('N,Y','G,G'),('Y,R','G,G'),('Y,B','G,G'),('Y,G','G,G'),('Y,N','G,G'),('Y,Y','G,G'),('B,B','Y,B'),('B,G','Y,B'),('B,N','Y,B'),('B,R','Y,B'),('B,Y','Y,B'),('G,B','Y,B'),('G,R','Y,B'),('N,G','R,N'),('R,B','Y,B'),('R,G','Y,B'),('R,N','Y,B'),('R,R','Y,B'),('R,Y','Y,B'),('Y,N','R,Y'),('Y,Y','R,Y'),('Y,Y','Y,G');
   UPDATE COMBOS SET LR = 'M';
 
 
 -- CAPTURES_ARCHIVE
-DROP TABLE IF EXISTS CAPTURES_ARCHIVE;
-CREATE TABLE CAPTURES_ARCHIVE (
-  date date                    DEFAULT NULL COMMENT 'Date caught YYYY-MM-DD',
-  sex_observed ENUM('M','F','U')         DEFAULT NULL COMMENT 'The observed sex: <kbd>F</kbd>(female),<kbd>M</kbd>(male),<kbd>U</kbd>(unknown)',
-  crest DOUBLE                 DEFAULT NULL COMMENT 'Length (mm)',
-  ID varchar(255)              DEFAULT NULL COMMENT 'Metal ring number.',
-  UL varchar(10)               DEFAULT NULL COMMENT 'color band',
-  UR varchar(10)               DEFAULT NULL COMMENT 'color band',
-  LL varchar(10)               DEFAULT NULL COMMENT 'color band',
-  LR varchar(10)               DEFAULT NULL COMMENT 'color band',
-  tagID varchar(10)            DEFAULT NULL COMMENT  'tagID',
-  tagType varchar(10)          DEFAULT NULL COMMENT  'D (druid), G (Global messenger)',
-
-  KEY ID (ID),
-  KEY tagID (tagID),
-  KEY COMBO (UL,LL,UR,LR)) 
-  ENGINE=ARIA;
+RENAME TABLE
+  FIELD_2025_NOLAatDUMMERSEE.CAPTURES_ARCHIVE
+TO
+  FIELD_2026_NOLAatDUMMERSEE.CAPTURES_ARCHIVE;
 
 
   INSERT INTO CAPTURES_ARCHIVE 
@@ -276,7 +271,7 @@ CREATE TABLE CAPTURES_ARCHIVE (
       LR,
       tagID,
       'D' as tagType
-  FROM FIELD_2024_NOLAatDUMMERSEE.CAPTURES;
+  FROM FIELD_2025_NOLAatDUMMERSEE.CAPTURES;
 
 -- todo_white_list
 CREATE TABLE IF NOT EXISTS todo_white_list (
