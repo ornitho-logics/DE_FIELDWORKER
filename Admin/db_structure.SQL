@@ -3,8 +3,10 @@
 -- setup 
 CREATE DATABASE IF NOT EXISTS FIELD_2026_NOLAatDUMMERSEE; 
 USE FIELD_2026_NOLAatDUMMERSEE; 
-GRANT SELECT, SHOW VIEW ON FIELD_2026_NOLAatDUMMERSEE.* TO '***field_db_user***'@'%';
+-- show grants for '***field_db_user***';
+-- GRANT SELECT, SHOW VIEW ON FIELD_2026_NOLAatDUMMERSEE.* TO '***field_db_user***'@'%';
 
+DROP TABLE IF EXISTS AUTHORS;
 CREATE TABLE IF NOT EXISTS AUTHORS (
   Name char(50)                DEFAULT NULL COMMENT 'Your full name.',
   author varchar(3)            DEFAULT NULL COMMENT 'Your initials. Use two or three letters. This is what you will use when entering data.',
@@ -33,20 +35,22 @@ CREATE TABLE CAPTURES (
   sex_observed ENUM('M','F','U')         DEFAULT NULL COMMENT 'The observed sex: <kbd>F</kbd>(female),<kbd>M</kbd>(male),<kbd>U</kbd>(unknown)',
   ID varchar(255)              DEFAULT NULL COMMENT 'Metal ring number.',
 
-  UL_in varchar(10)               DEFAULT NULL COMMENT 'color band at capture (leave blank if not changed)',
-  UR_in varchar(10)               DEFAULT NULL COMMENT 'color band at capture (leave blank if not changed)',
-  LL_in varchar(10)               DEFAULT NULL COMMENT 'color band at capture (leave blank if not changed)',
-  LR_in varchar(10)               DEFAULT NULL COMMENT 'color band at capture (leave blank if not changed)',
+  UL_in varchar(10)               DEFAULT NULL COMMENT 'color band at capture,before handling (leave blank if not changed)',
+  UR_in varchar(10)               DEFAULT NULL COMMENT 'color band at capture,before handling (leave blank if not changed)',
+  LL_in varchar(10)               DEFAULT NULL COMMENT 'color band at capture,before handling (leave blank if not changed)',
+  LR_in varchar(10)               DEFAULT NULL COMMENT 'color band at capture,before handling (leave blank if not changed)',
 
   UL varchar(10)               DEFAULT NULL COMMENT 'color band at release',
   UR varchar(10)               DEFAULT NULL COMMENT 'color band at release',
   LL varchar(10)               DEFAULT NULL COMMENT 'color band at release',
   LR varchar(10)               DEFAULT NULL COMMENT 'color band at release',
 
+  tagID_in varchar(10)         DEFAULT NULL COMMENT  'tagID at capture, before handling (leave blank if not changed)',
   tagID varchar(10)            DEFAULT NULL COMMENT  'tagID',
   tagType varchar(10)          DEFAULT NULL COMMENT  'D (druid), G (Global messenger)',
   tag_action varchar(10)       DEFAULT NULL COMMENT 'on (tag deployed) or off(tag removed)',
   harness DOUBLE               DEFAULT NULL COMMENT 'harness diameter (mm)',
+  
   recapture BOOLEAN            DEFAULT NULL COMMENT '1(yes), 0(no)',
   
   tarsus DOUBLE                DEFAULT NULL COMMENT 'Length (mm)',
@@ -224,7 +228,7 @@ CREATE TABLE SAMPLES (
   date_collect DATE NOT NULL            COMMENT 'Date the sample was collected',
   notes_field VARCHAR(255) DEFAULT NULL COMMENT 'Notes from field observation',
   tissue_collected TINYINT(1) DEFAULT 0 COMMENT '1 if tissue collected, 0 otherwise',
-  embrio_score TINYINT UNSIGNED DEFAULT NULL COMMENT 'Categorical embryo score from 0 to 9',
+  embryo_score TINYINT UNSIGNED DEFAULT NULL COMMENT 'Categorical embryo score from 0 to 9',
   date_processed DATE DEFAULT NULL      COMMENT 'Date the sample was processed (if applicable)',
   author VARCHAR(3) DEFAULT NULL        COMMENT 'Initials of collector/processor',
   notes_lab VARCHAR(255) DEFAULT NULL   COMMENT 'Notes from lab examination',
