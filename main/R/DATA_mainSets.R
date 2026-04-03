@@ -60,7 +60,7 @@ NESTS <- function(DB = db, .refdate = input$refdate) {
   x[, pk := NULL]
   x = unique(x)
 
-  # do not changr to date: each line should be unique
+  # do not change to date: each line should be unique
   x[, date := lubridate::ymd_hms(paste(date, time_appr))]
   setorder(x, nest, date)
 
@@ -206,8 +206,10 @@ NESTS <- function(DB = db, .refdate = input$refdate) {
     fun.aggregate = function(x) paste(x, collapse = ",")
   )
   if (nrow(mfc2) > 0) {
-    mfc2[nchar(F) == 0, F := NA]
-    mfc2[nchar(M) == 0, M := NA]
+    mfc2[!"F" %in% names(mfc2) || nchar(F) == 0, F := NA]
+
+    mfc2[!"M" %in% names(mfc2) || nchar(M) == 0, M := NA]
+
     setnames(mfc2, c("F", "M"), c("F_cap", "M_cap"))
   } else {
     mfc2[, let(F_cap = NA, M_cap = NA)]

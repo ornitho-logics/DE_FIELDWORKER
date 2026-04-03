@@ -57,6 +57,7 @@ dbtabs_entry =
     "NESTS",
     "EGGS",
     "SAMPLES",
+    "tags_eol",
     "todo_white_list"
   )
 dbtabs_view =
@@ -69,6 +70,7 @@ dbtabs_view =
     "NESTS",
     "EGGS",
     "SAMPLES",
+    "tags_eol",
     "COMBOS"
   )
 species = c("NOLA", "REDS")

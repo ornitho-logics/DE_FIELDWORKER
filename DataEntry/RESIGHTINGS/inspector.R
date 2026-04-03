@@ -25,14 +25,20 @@ inspector.RESIGHTINGS <- function(dat, ...) {
         )
       ),
 
-    x[, .(gps_id, rowid)] |>
-      is.element_validator(
-        v = data.table(
-          variable = "gps_id",
-          set = list(1:10),
-          reason = "GPS ID not in use"
+    # Reinforce values (from existing db tables or lists)
+    {
+      z = x[, .(gps_id, sex)]
+
+      v <- data.table(
+        variable = names(z),
+        set = c(
+          list(1:10), # gps Id-s
+          list(c("F", "M", "U")) # sex
         )
-      ),
+      )
+
+      is.element_validator(z, v)
+    },
 
     # COMBO should exist in CAPTURES
     {
