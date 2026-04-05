@@ -12,15 +12,14 @@ ADD COLUMN   sex ENUM('M','F','U')  DEFAULT NULL COMMENT 'Sex: <kbd>F</kbd>(fema
 
 
 ```sql
+DROP TABLE IF EXISTS tags_eol;
 CREATE TABLE tags_eol (
 
   tagID varchar(10)  DEFAULT NULL COMMENT  'tagID',
   eol TINYINT(1)     DEFAULT NULL COMMENT '1 if tag is end of life and has to be retrieved',
-  pk int(10)       NOT NULL AUTO_INCREMENT,
-  PRIMARY KEY (pk),
   KEY tagID (tagID)
 ) ENGINE=Aria 
-
+;
 
 
   INSERT INTO tags_eol 

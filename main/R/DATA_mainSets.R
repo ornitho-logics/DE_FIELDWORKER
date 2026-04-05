@@ -45,6 +45,7 @@ ALL_EGGS <- function(yy = years) {
 #* This function should work on all seasons. Any difference between seasons should be implemented by extensions to this function.
 #' n = NESTS()
 #' n = NESTS(DB = yr2dbnam(2024), .refdate = "2024-04-26")
+#' n = NESTS(DB = Sys.Date()|>year() |> yr2dbnam() )
 #'
 NESTS <- function(DB = db, .refdate = input$refdate) {
   if (!exists('input', envir = .GlobalEnv)) {
@@ -206,9 +207,9 @@ NESTS <- function(DB = db, .refdate = input$refdate) {
     fun.aggregate = function(x) paste(x, collapse = ",")
   )
   if (nrow(mfc2) > 0) {
-    mfc2[!"F" %in% names(mfc2) || nchar(F) == 0, F := NA]
+    mfc2[!"F" %in% names(mfc2) | nchar(F) == 0, F := NA]
 
-    mfc2[!"M" %in% names(mfc2) || nchar(M) == 0, M := NA]
+    mfc2[!"M" %in% names(mfc2) | nchar(M) == 0, M := NA]
 
     setnames(mfc2, c("F", "M"), c("F_cap", "M_cap"))
   } else {
